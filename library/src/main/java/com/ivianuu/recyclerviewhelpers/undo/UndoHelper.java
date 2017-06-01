@@ -19,40 +19,38 @@ import java.util.TreeSet;
  */
 public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<M>, M> {
 
-    private static final int ACTION_ADD = 1;
     private static final int ACTION_REMOVE = 2;
-    private static final int ACTION_MOVE = 3;
 
-    private A mAdapter;
+    private A adapter;
 
     private UndoListener<M> mUndoListener;
 
     // Snackbar
-    private Snackbar mSnackbar;
-    private View mSnackbarContainer;
-    private String mSnackbarText;
-    private String mSnackbarActionText;
-    private int mSnackbarDuration;
-    private int mSnackbarActionTextColor;
+    private Snackbar snackbar;
+    private View snackbarContainer;
+    private String snackbarText;
+    private String snackbarActionText;
+    private int snackbarDuration;
+    private int snackbarActionTextColor;
 
-    private History mHistory = null;
+    private History history = null;
 
     private UndoHelper(Builder<A, M> builder) {
-        mAdapter = builder.adapter;
+        adapter = builder.adapter;
         mUndoListener = builder.undoListener;
 
-        mSnackbarContainer = builder.snackbarContainer;
-        mSnackbarText = builder.snackbarText;
+        snackbarContainer = builder.snackbarContainer;
+        snackbarText = builder.snackbarText;
 
         // use default text
-        mSnackbarActionText = builder.snackbarActionText;
+        snackbarActionText = builder.snackbarActionText;
 
         // use default action text
 
-        mSnackbarDuration = builder.snackbarDuration;
-        mSnackbarActionTextColor = builder.snackbarActionTextColor;
+        snackbarDuration = builder.snackbarDuration;
+        snackbarActionTextColor = builder.snackbarActionTextColor;
 
-        mSnackbar = Snackbar.make(mSnackbarContainer, mSnackbarText, mSnackbarDuration)
+        snackbar = Snackbar.make(snackbarContainer, snackbarText, snackbarDuration)
                 .addCallback(new Snackbar.Callback() {
                     @Override
                     public void onDismissed(Snackbar snackbar, int event) {
@@ -80,7 +78,7 @@ public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<
                     }
                 });
 
-        mSnackbar.setAction(mSnackbarActionText, new View.OnClickListener() {
+        snackbar.setAction(snackbarActionText, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 undoChange();
@@ -88,8 +86,8 @@ public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<
         });
 
         // apply the action text color
-        if (mSnackbarActionTextColor != Color.TRANSPARENT) {
-            mSnackbar.setActionTextColor(mSnackbarActionTextColor);
+        if (snackbarActionTextColor != Color.TRANSPARENT) {
+            snackbar.setActionTextColor(snackbarActionTextColor);
         }
     }
 
@@ -97,8 +95,8 @@ public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<
      * Cancels the current operation
      */
     public void cancel() {
-        mSnackbar.dismiss();
-        mHistory = null;
+        snackbar.dismiss();
+        history = null;
     }
 
     /**
@@ -129,11 +127,11 @@ public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<
      */
     public void remove(final Set<Integer> positions) {
         // Notify old history
-        if (mHistory != null) notifyCommit();
+        if (history != null) notifyCommit();
 
         History history = new History(ACTION_REMOVE);
         for (int position : positions) {
-            history.items.add(new ItemInfo<>(mAdapter.getDataSet().get(position), position));
+            history.items.add(new ItemInfo<>(adapter.getDataSet().get(position), position));
         }
 
         Collections.sort(history.items, new Comparator<ItemInfo<M>>() {
@@ -143,19 +141,19 @@ public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<
             }
         });
 
-        mHistory = history;
+        this.history = history;
 
-        if (mSnackbar.isShown()) {
+        if (snackbar.isShown()) {
             // Snackbar is currently shown so do change directly
             doChange();
         } else {
-            mSnackbar.show();
+            snackbar.show();
         }
     }
 
     private void notifyCommit() {
-        if (mHistory != null) {
-            if (mHistory.action == ACTION_REMOVE) {
+        if (history != null) {
+            if (history.action == ACTION_REMOVE) {
                 SortedSet<Integer> positions = new TreeSet<>(new Comparator<Integer>() {
                     @Override
                     public int compare(Integer lhs, Integer rhs) {
@@ -165,7 +163,7 @@ public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<
 
                 List<M> removedModels = new ArrayList<>();
 
-                for (ItemInfo<M> itemInfo : mHistory.items) {
+                for (ItemInfo<M> itemInfo : history.items) {
                     positions.add(itemInfo.position);
                     removedModels.add(itemInfo.model);
                 }
@@ -173,19 +171,19 @@ public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<
                 if (mUndoListener != null)
                     mUndoListener.commitRemove(positions, removedModels);
 
-                mHistory = null;
+                history = null;
             }
         }
     }
 
     private void doChange() {
-        if (mHistory != null) {
-            switch (mHistory.action) {
+        if (history != null) {
+            switch (history.action) {
                 case ACTION_REMOVE:
-                    for (int i = mHistory.items.size() - 1; i >= 0; i--) {
-                        ItemInfo<M> itemInfo = mHistory.items.get(i);
-                        mAdapter.getDataSet().remove(itemInfo.position);
-                        mAdapter.notifyItemRemoved(itemInfo.position);
+                    for (int i = history.items.size() - 1; i >= 0; i--) {
+                        ItemInfo<M> itemInfo = history.items.get(i);
+                        adapter.getDataSet().remove(itemInfo.position);
+                        adapter.notifyItemRemoved(itemInfo.position);
                     }
                     break;
             }
@@ -193,18 +191,18 @@ public class UndoHelper<A extends RecyclerView.Adapter & UndoHelper.UndoAdapter<
     }
 
     private void undoChange() {
-        if (mHistory != null) {
-            switch (mHistory.action) {
+        if (history != null) {
+            switch (history.action) {
                 case ACTION_REMOVE:
-                    for (int i = 0, size = mHistory.items.size(); i < size; i++) {
-                        ItemInfo<M> itemInfo = mHistory.items.get(i);
-                        mAdapter.getDataSet().add(itemInfo.position, itemInfo.model);
-                        mAdapter.notifyItemInserted(itemInfo.position);
+                    for (int i = 0, size = history.items.size(); i < size; i++) {
+                        ItemInfo<M> itemInfo = history.items.get(i);
+                        adapter.getDataSet().add(itemInfo.position, itemInfo.model);
+                        adapter.notifyItemInserted(itemInfo.position);
                     }
                     break;
             }
         }
-        mHistory = null;
+        history = null;
     }
 
     public interface UndoAdapter<M> {

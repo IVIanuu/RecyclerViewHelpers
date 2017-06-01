@@ -11,44 +11,44 @@ public final class EndlessScrollHelper {
 
     private static final String TAG = EndlessScrollHelper.class.getSimpleName();
 
-    private final RecyclerView mRecyclerView;
+    private final RecyclerView recyclerView;
 
-    private final Callbacks mCallbacks;
+    private final Callbacks callbacks;
 
-    private final int mLoadingTriggerThreshold;
+    private final int loadingTriggerThreshold;
 
-    private WrapperAdapter mWrapperAdapter;
-    private WrapperSpanSizeLookup mWrapperSpanSizeLookup;
+    private WrapperAdapter wrapperAdapter;
+    private WrapperSpanSizeLookup wrapperSpanSizeLookup;
 
-    private boolean mLoading;
-    private int mVisibleItemCount;
-    private int mPreviousTotal;
+    private boolean loading;
+    private int visibleItemCount;
+    private int previousTotal;
     private int mTotalItemCount;
-    private int mCurrentPage = 1;
-    private boolean mAllItemsLoaded;
+    private int currentPage = 1;
+    private boolean allItemsLoaded;
 
     private EndlessScrollHelper(Builder builder) {
-        mRecyclerView = builder.recyclerView;
-        mCallbacks = builder.callbacks;
-        mLoadingTriggerThreshold = builder.loadingTriggerThreshold;
+        recyclerView = builder.recyclerView;
+        callbacks = builder.callbacks;
+        loadingTriggerThreshold = builder.loadingTriggerThreshold;
 
         // Attach scrolling listener in order to perform end offset check on each scroll event
-        mRecyclerView.addOnScrollListener(mOnScrollListener);
+        recyclerView.addOnScrollListener(mOnScrollListener);
 
         if (builder.addLoadingItem) {
             // Wrap existing adapter with new adapter that will add loading row
-            RecyclerView.Adapter adapter = mRecyclerView.getAdapter();
-            mWrapperAdapter = new WrapperAdapter(adapter, builder.mLoadingItemCreator);
+            RecyclerView.Adapter adapter = recyclerView.getAdapter();
+            wrapperAdapter = new WrapperAdapter(adapter, builder.loadingItemCreator);
             adapter.registerAdapterDataObserver(mDataObserver);
-            mRecyclerView.setAdapter(mWrapperAdapter);
+            recyclerView.setAdapter(wrapperAdapter);
 
             // For GridLayoutManager use separate/customisable span lookup for loading row
-            if (mRecyclerView.getLayoutManager() instanceof GridLayoutManager) {
-                mWrapperSpanSizeLookup = new WrapperSpanSizeLookup(
-                        ((GridLayoutManager) mRecyclerView.getLayoutManager()).getSpanSizeLookup(),
+            if (recyclerView.getLayoutManager() instanceof GridLayoutManager) {
+                wrapperSpanSizeLookup = new WrapperSpanSizeLookup(
+                        ((GridLayoutManager) recyclerView.getLayoutManager()).getSpanSizeLookup(),
                         builder.loadingItemSpan,
-                        mWrapperAdapter);
-                ((GridLayoutManager) mRecyclerView.getLayoutManager()).setSpanSizeLookup(mWrapperSpanSizeLookup);
+                        wrapperAdapter);
+                ((GridLayoutManager) recyclerView.getLayoutManager()).setSpanSizeLookup(wrapperSpanSizeLookup);
             }
         }
 
@@ -58,16 +58,16 @@ public final class EndlessScrollHelper {
     }
 
     private void checkEndOffset() {
-        mVisibleItemCount = mRecyclerView.getChildCount();
-        mTotalItemCount = mRecyclerView.getLayoutManager().getItemCount();
+        visibleItemCount = recyclerView.getChildCount();
+        mTotalItemCount = recyclerView.getLayoutManager().getItemCount();
 
         int firstVisibleItemPosition;
-        if (mRecyclerView.getLayoutManager() instanceof LinearLayoutManager) {
-            firstVisibleItemPosition = ((LinearLayoutManager) mRecyclerView.getLayoutManager()).findFirstVisibleItemPosition();
-        } else if (mRecyclerView.getLayoutManager() instanceof StaggeredGridLayoutManager) {
+        if (recyclerView.getLayoutManager() instanceof LinearLayoutManager) {
+            firstVisibleItemPosition = ((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
+        } else if (recyclerView.getLayoutManager() instanceof StaggeredGridLayoutManager) {
             // https://code.google.com/p/android/issues/detail?id=181461
-            if (mRecyclerView.getLayoutManager().getChildCount() > 0) {
-                firstVisibleItemPosition = ((StaggeredGridLayoutManager) mRecyclerView.getLayoutManager()).findFirstVisibleItemPositions(null)[0];
+            if (recyclerView.getLayoutManager().getChildCount() > 0) {
+                firstVisibleItemPosition = ((StaggeredGridLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPositions(null)[0];
             } else {
                 firstVisibleItemPosition = 0;
             }
@@ -76,25 +76,25 @@ public final class EndlessScrollHelper {
         }
 
         // check if were finished with loading
-        if (mLoading) {
-            if (mTotalItemCount > mPreviousTotal) {
-                mLoading = false;
-                mPreviousTotal = mTotalItemCount;
+        if (loading) {
+            if (mTotalItemCount > previousTotal) {
+                loading = false;
+                previousTotal = mTotalItemCount;
                 Log.d(TAG, "were finished with loading");
             } else {
                 Log.d(TAG, "were actually loading");
             }
         }
         // Check if end of the list is reached (counting threshold) or if there is no items at all
-        if ((mTotalItemCount - mVisibleItemCount) <= (firstVisibleItemPosition + mLoadingTriggerThreshold)
+        if ((mTotalItemCount - visibleItemCount) <= (firstVisibleItemPosition + loadingTriggerThreshold)
                 || mTotalItemCount == 0) {
             Log.d(TAG, "first check passed");
             // Call load more only if loading is not currently in progress and if there is more items to load
-            if (!mLoading && !mAllItemsLoaded) {
-                mCurrentPage ++;
-                mCallbacks.onLoadMore(mCurrentPage);
-                mLoading = true;
-                Log.d(TAG, "we should load some more items now current page " + mCurrentPage);
+            if (!loading && !allItemsLoaded) {
+                currentPage ++;
+                callbacks.onLoadMore(currentPage);
+                loading = true;
+                Log.d(TAG, "we should load some more items now current page " + currentPage);
             } else {
                 Log.d(TAG, "were already loading or all items have loaded");
             }
@@ -102,7 +102,7 @@ public final class EndlessScrollHelper {
     }
 
     private void onAdapterDataChanged() {
-        mWrapperAdapter.showLoadingItem(!mAllItemsLoaded);
+        wrapperAdapter.showLoadingItem(!allItemsLoaded);
         checkEndOffset();
     }
 
@@ -114,9 +114,9 @@ public final class EndlessScrollHelper {
     };
 
     public void setAllItemsLoaded() {
-        mAllItemsLoaded = true;
-        if (mWrapperAdapter != null) {
-            mWrapperAdapter.showLoadingItem(false);
+        allItemsLoaded = true;
+        if (wrapperAdapter != null) {
+            wrapperAdapter.showLoadingItem(false);
         }
     }
 
@@ -125,15 +125,15 @@ public final class EndlessScrollHelper {
     }
 
     public int getPreviousTotal() {
-        return mPreviousTotal;
+        return previousTotal;
     }
 
     public int getVisibleItemCount() {
-        return mVisibleItemCount;
+        return visibleItemCount;
     }
 
     public int getCurrentPage() {
-        return mCurrentPage;
+        return currentPage;
     }
 
     public void resetPageCount() {
@@ -143,65 +143,65 @@ public final class EndlessScrollHelper {
     public void resetPageCount(int page) {
         // resetting values
         mTotalItemCount = 0;
-        mPreviousTotal = 0;
-        mLoading = true;
-        mCurrentPage = page;
-        mAllItemsLoaded = false;
-        if (mWrapperAdapter != null) {
-            mWrapperAdapter.showLoadingItem(true);
+        previousTotal = 0;
+        loading = true;
+        currentPage = page;
+        allItemsLoaded = false;
+        if (wrapperAdapter != null) {
+            wrapperAdapter.showLoadingItem(true);
         }
-        mCallbacks.onLoadMore(mCurrentPage);
+        callbacks.onLoadMore(currentPage);
     }
 
     public void unbind() {
-        mRecyclerView.removeOnScrollListener(mOnScrollListener);   // Remove scroll listener
-        if (mRecyclerView.getAdapter() instanceof WrapperAdapter) {
-            WrapperAdapter mWrapperAdapter = (WrapperAdapter) mRecyclerView.getAdapter();
-            RecyclerView.Adapter adapter = mWrapperAdapter.getWrappedAdapter();
+        recyclerView.removeOnScrollListener(mOnScrollListener);   // Remove scroll listener
+        if (recyclerView.getAdapter() instanceof WrapperAdapter) {
+            WrapperAdapter wrapperAdapter = (WrapperAdapter) recyclerView.getAdapter();
+            RecyclerView.Adapter adapter = wrapperAdapter.getWrappedAdapter();
             adapter.unregisterAdapterDataObserver(mDataObserver); // Remove data observer
-            mRecyclerView.setAdapter(adapter);                     // Swap back original adapter
+            recyclerView.setAdapter(adapter);                     // Swap back original adapter
         }
-        if (mRecyclerView.getLayoutManager() instanceof GridLayoutManager && mWrapperSpanSizeLookup != null) {
+        if (recyclerView.getLayoutManager() instanceof GridLayoutManager && wrapperSpanSizeLookup != null) {
             // Swap back original SpanSizeLookup
-            GridLayoutManager.SpanSizeLookup spanSizeLookup = mWrapperSpanSizeLookup.getWrappedSpanSizeLookup();
-            ((GridLayoutManager) mRecyclerView.getLayoutManager()).setSpanSizeLookup(spanSizeLookup);
+            GridLayoutManager.SpanSizeLookup spanSizeLookup = wrapperSpanSizeLookup.getWrappedSpanSizeLookup();
+            ((GridLayoutManager) recyclerView.getLayoutManager()).setSpanSizeLookup(spanSizeLookup);
         }
     }
 
     private final RecyclerView.AdapterDataObserver mDataObserver = new RecyclerView.AdapterDataObserver() {
         @Override
         public void onChanged() {
-            mWrapperAdapter.notifyDataSetChanged();
+            wrapperAdapter.notifyDataSetChanged();
             onAdapterDataChanged();
         }
 
         @Override
         public void onItemRangeInserted(int positionStart, int itemCount) {
-            mWrapperAdapter.notifyItemRangeInserted(positionStart, itemCount);
+            wrapperAdapter.notifyItemRangeInserted(positionStart, itemCount);
             onAdapterDataChanged();
         }
 
         @Override
         public void onItemRangeChanged(int positionStart, int itemCount) {
-            mWrapperAdapter.notifyItemRangeChanged(positionStart, itemCount);
+            wrapperAdapter.notifyItemRangeChanged(positionStart, itemCount);
             onAdapterDataChanged();
         }
 
         @Override
         public void onItemRangeChanged(int positionStart, int itemCount, Object payload) {
-            mWrapperAdapter.notifyItemRangeChanged(positionStart, itemCount, payload);
+            wrapperAdapter.notifyItemRangeChanged(positionStart, itemCount, payload);
             onAdapterDataChanged();
         }
 
         @Override
         public void onItemRangeRemoved(int positionStart, int itemCount) {
-            mWrapperAdapter.notifyItemRangeRemoved(positionStart, itemCount);
+            wrapperAdapter.notifyItemRangeRemoved(positionStart, itemCount);
             onAdapterDataChanged();
         }
 
         @Override
         public void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) {
-            mWrapperAdapter.notifyItemMoved(fromPosition, toPosition);
+            wrapperAdapter.notifyItemMoved(fromPosition, toPosition);
             onAdapterDataChanged();
         }
     };
@@ -213,7 +213,7 @@ public final class EndlessScrollHelper {
 
         private int loadingTriggerThreshold = 1;
         private boolean addLoadingItem = true;
-        private LoadingItemCreator mLoadingItemCreator;
+        private LoadingItemCreator loadingItemCreator;
         private int loadingItemSpan = -1;
 
         public Builder() {
@@ -241,11 +241,11 @@ public final class EndlessScrollHelper {
         }
 
         public Builder withLoadingItemCreator(@NonNull LoadingItemCreator creator) {
-            this.mLoadingItemCreator = creator;
+            this.loadingItemCreator = creator;
             return this;
         }
 
-        public Builder withLoadingItemSpan(@NonNull int loadingItemSpan) {
+        public Builder withLoadingItemSpan(int loadingItemSpan) {
             this.loadingItemSpan = loadingItemSpan;
             return this;
         }
@@ -264,8 +264,8 @@ public final class EndlessScrollHelper {
                 throw new IllegalStateException("LayoutManager needs to be set on the RecyclerView");
             }
 
-            if (mLoadingItemCreator == null) {
-                mLoadingItemCreator = LoadingItemCreator.DEFAULT;
+            if (loadingItemCreator == null) {
+                loadingItemCreator = LoadingItemCreator.DEFAULT;
             }
 
             if (loadingItemSpan == -1) {

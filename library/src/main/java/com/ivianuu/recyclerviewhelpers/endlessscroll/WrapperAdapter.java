@@ -7,76 +7,76 @@ class WrapperAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int ITEM_VIEW_TYPE_LOADING = Integer.MAX_VALUE - 50; // Magic
 
-    private final RecyclerView.Adapter mWrappedAdapter;
+    private final RecyclerView.Adapter wrappedAdapter;
 
-    private final LoadingItemCreator mLoadingItemCreator;
+    private final LoadingItemCreator loadingItemCreator;
 
-    private boolean mShowLoadingItem = true;
+    private boolean showLoadingItem = true;
 
     WrapperAdapter(RecyclerView.Adapter adapter, LoadingItemCreator creator) {
-        mWrappedAdapter = adapter;
-        mLoadingItemCreator = creator;
+        wrappedAdapter = adapter;
+        loadingItemCreator = creator;
     }
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == ITEM_VIEW_TYPE_LOADING) {
-            return mLoadingItemCreator.onCreateViewHolder(parent, viewType);
+            return loadingItemCreator.onCreateViewHolder(parent, viewType);
         } else {
-            return mWrappedAdapter.onCreateViewHolder(parent, viewType);
+            return wrappedAdapter.onCreateViewHolder(parent, viewType);
         }
     }
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         if (isLoadingItem(position)) {
-            mLoadingItemCreator.onBindViewHolder(holder, position);
+            loadingItemCreator.onBindViewHolder(holder, position);
         } else {
-            mWrappedAdapter.onBindViewHolder(holder, position);
+            wrappedAdapter.onBindViewHolder(holder, position);
         }
     }
 
     @Override
     public int getItemCount() {
-        return mShowLoadingItem ? mWrappedAdapter.getItemCount() + 1 : mWrappedAdapter.getItemCount();
+        return showLoadingItem ? wrappedAdapter.getItemCount() + 1 : wrappedAdapter.getItemCount();
     }
 
     @Override
     public int getItemViewType(int position) {
-        return isLoadingItem(position) ? ITEM_VIEW_TYPE_LOADING : mWrappedAdapter.getItemViewType(position);
+        return isLoadingItem(position) ? ITEM_VIEW_TYPE_LOADING : wrappedAdapter.getItemViewType(position);
     }
 
     @Override
     public long getItemId(int position) {
-        return isLoadingItem(position) ? RecyclerView.NO_ID : mWrappedAdapter.getItemId(position);
+        return isLoadingItem(position) ? RecyclerView.NO_ID : wrappedAdapter.getItemId(position);
     }
 
     @Override
     public void setHasStableIds(boolean hasStableIds) {
         super.setHasStableIds(hasStableIds);
-        mWrappedAdapter.setHasStableIds(hasStableIds);
+        wrappedAdapter.setHasStableIds(hasStableIds);
     }
 
     RecyclerView.Adapter getWrappedAdapter() {
-        return mWrappedAdapter;
+        return wrappedAdapter;
     }
 
     boolean isShowingLoadingItem() {
-        return mShowLoadingItem;
+        return showLoadingItem;
     }
 
     void showLoadingItem(boolean showLoadingItem) {
-        if (mShowLoadingItem != showLoadingItem) {
-            mShowLoadingItem = showLoadingItem;
+        if (this.showLoadingItem != showLoadingItem) {
+            this.showLoadingItem = showLoadingItem;
             notifyDataSetChanged();
         }
     }
 
     boolean isLoadingItem(int position) {
-        return mShowLoadingItem && position == getLoadingItemPosition();
+        return showLoadingItem && position == getLoadingItemPosition();
     }
 
     private int getLoadingItemPosition() {
-        return mShowLoadingItem ? getItemCount() - 1 : -1;
+        return showLoadingItem ? getItemCount() - 1 : -1;
     }
 }

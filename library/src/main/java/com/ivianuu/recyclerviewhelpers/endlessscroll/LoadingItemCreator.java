@@ -9,6 +9,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.ivianuu.recyclerviewhelpers.R;
+
 public interface LoadingItemCreator {
 
     LoadingItemCreator DEFAULT = new LoadingItemCreator() {
